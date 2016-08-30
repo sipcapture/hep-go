@@ -1,6 +1,6 @@
 /**
 * Homer Encapsulation Protocol v3
-* Courtesy of Weave-Labs (http://getweave.com/) under the ISC license (https://en.wikipedia.org/wiki/ISC_license)
+* Courtesy of Weave Communications, Inc (http://getweave.com/) under the ISC license (https://en.wikipedia.org/wiki/ISC_license)
 **/
 
 package hep
@@ -8,7 +8,6 @@ package hep
 import (
 	"encoding/binary"
 	"errors"
-	//"lab.getweave.com/weave/flanders/sip"
 	"net"
 
 	"github.com/dgv/sipparser"
