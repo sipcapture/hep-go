@@ -9,7 +9,7 @@ import (
  */
 func TestBasicParse(t *testing.T) {
 	t.Log("Test basic parse")
-	msg := &HepMsg{}
+
 	udpPacket := []byte{
 		0x48, 0x45, 0x50, 0x33, // HepID
 		0x00, 0x71, 0x00, 0x00, 0x00, 0x01, 0x00, 0x07, 0x02,
@@ -27,7 +27,11 @@ func TestBasicParse(t *testing.T) {
 
 	t.Log("Parsing sample HEP3 message from spec...")
 
-	msg.parse(udpPacket)
+	msg, err := NewHepMsg(udpPacket)
+	if err != nil {
+		t.Log("Parse failed")
+		t.Fatal(err.Error())
+	}
 
 	if msg.IP4SourceAddress != "212.202.0.1" {
 		t.Fatalf("HepMsg.Parse: Expected source address to be 212.202.0.1, but it was %s", msg.IP4SourceAddress)
