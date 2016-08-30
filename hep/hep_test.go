@@ -27,18 +27,18 @@ func TestBasicParse(t *testing.T) {
 
 	t.Log("Parsing sample HEP3 message from spec...")
 
-	msg.Parse(udpPacket)
+	msg.parse(udpPacket)
 
-	if msg.Ip4SourceAddress != "212.202.0.1" {
-		t.Fatalf("HepMsg.Parse: Expected source address to be 212.202.0.1, but it was %s", msg.Ip4SourceAddress)
+	if msg.IP4SourceAddress != "212.202.0.1" {
+		t.Fatalf("HepMsg.Parse: Expected source address to be 212.202.0.1, but it was %s", msg.IP4SourceAddress)
 	}
-	if msg.Ip4DestinationAddress != "82.116.0.211" {
-		t.Fatalf("HepMsg.Parse: Expected source address to be 212.202.0.1, but it was %s", msg.Ip4DestinationAddress)
+	if msg.IP4DestinationAddress != "82.116.0.211" {
+		t.Fatalf("HepMsg.Parse: Expected source address to be 212.202.0.1, but it was %s", msg.IP4DestinationAddress)
 	}
 	if msg.SourcePort != 12010 {
-		t.Fatalf("HepMsg.Parse: Expected source port to be 12010, but it was %s", msg.SourcePort)
+		t.Fatalf("HepMsg.Parse: Expected source port to be 12010, but it was %d", msg.SourcePort)
 	}
 	if msg.DestinationPort != 5060 {
-		t.Fatalf("HepMsg.Parse: Expected source port to be 5060, but it was %s", msg.DestinationPort)
+		t.Fatalf("HepMsg.Parse: Expected source port to be 5060, but it was %d", msg.DestinationPort)
 	}
 }

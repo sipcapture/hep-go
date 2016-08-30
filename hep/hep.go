@@ -19,47 +19,47 @@ import (
 
 // HEP ID
 const (
-	HEP_ID1 = 0x011002
-	HEP_ID2 = 0x021002
-	HEP_ID3 = 0x48455033
+	HEPID1 = 0x011002
+	HEPID2 = 0x021002
+	HEPID3 = 0x48455033
 )
 
 // Generic Chunk Types
 const (
 	_ = iota // Don't want to assign zero here, but want to implicitly repeat this expression after...
-	IP_PROTOCOL_FAMILY
-	IP_PROTOCOL_ID
-	IP4_SOURCE_ADDRESS
-	IP4_DESTINATION_ADDRESS
-	IP6_SOURCE_ADDRESS
-	IP6_DESTINATION_ADDRESS
-	SOURCE_PORT
-	DESTINATION_PORT
-	TIMESTAMP
-	TIMESTAMP_MICRO
-	PROTOCOL_TYPE // Maps to Protocol Types below
-	CAPTURE_AGENT_ID
-	KEEP_ALIVE_TIMER
-	AUTHENTICATE_KEY
-	PACKET_PAYLOAD
-	COMPRESSED_PAYLOAD
-	INTERNAL_C
+	IPProtocolFamily
+	IPProtocolID
+	IP4SourceAddress
+	IP4DestinationAddress
+	IP6SourceAddress
+	IP6DestinationAddress
+	SourcePort
+	DestinationPort
+	Timestamp
+	TimestampMicro
+	ProtocolType // Maps to Protocol Types below
+	CaptureAgentID
+	KeepAliveTimer
+	AuthenticationKey
+	PacketPayload
+	CompressedPayload
+	InternalC
 )
 
-var ProtocolFamilies []string
-var Vendors []string
-var ProtocolTypes []string
+var protocolFamilies []string
+var vendors []string
+var protocolTypes []string
 
 func init() {
 
 	// Protocol Family Types - HEP3 Spec does not list these values out. Took IPv4 from an example.
-	ProtocolFamilies = []string{
+	protocolFamilies = []string{
 		"?",
 		"?",
 		"IPv4"}
 
 	// Initialize vendors
-	Vendors = []string{
+	vendors = []string{
 		"None",
 		"FreeSWITCH",
 		"Kamailio",
@@ -70,7 +70,7 @@ func init() {
 	}
 
 	// Initialize protocol types
-	ProtocolTypes = []string{
+	protocolTypes = []string{
 		"Reserved",
 		"SIP",
 		"XMPP",
@@ -87,20 +87,20 @@ func init() {
 	}
 }
 
-// Define Struct for storing full HEP message
+// HepMsg represents a parsed HEP packet
 type HepMsg struct {
-	IpProtocolFamily      byte
-	IpProtocolId          byte
-	Ip4SourceAddress      string
-	Ip4DestinationAddress string
-	Ip6SourceAddress      string
-	Ip6DestinationAddress string
+	IPProtocolFamily      byte
+	IPProtocolID          byte
+	IP4SourceAddress      string
+	IP4DestinationAddress string
+	IP6SourceAddress      string
+	IP6DestinationAddress string
 	SourcePort            uint16
 	DestinationPort       uint16
 	Timestamp             uint32
 	TimestampMicro        uint32
 	ProtocolType          byte
-	CaptureAgentId        uint16
+	CaptureAgentID        uint16
 	KeepAliveTimer        uint16
 	AuthenticateKey       string
 	Body                  string
@@ -108,30 +108,31 @@ type HepMsg struct {
 	//SipMsg	*sip.SipMsg
 }
 
+// NewHepMsg returns a parsed message object. Takes a byte slice.
 func NewHepMsg(packet []byte) (*HepMsg, error) {
 	newHepMsg := &HepMsg{}
-	err := newHepMsg.Parse(packet)
+	err := newHepMsg.parse(packet)
 	if err != nil {
 		return nil, err
 	}
 	return newHepMsg, nil
 }
 
-func (hepMsg *HepMsg) Parse(udpPacket []byte) error {
+func (hepMsg *HepMsg) parse(udpPacket []byte) error {
 
 	switch udpPacket[0] {
 	case 0x01:
-		return hepMsg.ParseHep1(udpPacket)
+		return hepMsg.parseHep1(udpPacket)
 	case 0x02:
-		return hepMsg.ParseHep2(udpPacket)
+		return hepMsg.parseHep2(udpPacket)
 	case 0x48:
-		return hepMsg.ParseHep3(udpPacket)
+		return hepMsg.parseHep3(udpPacket)
 	default:
 		err := errors.New("Not a valid HEP packet - HEP ID does not match spec")
 		return err
 	}
 }
-func (hepMsg *HepMsg) ParseHep1(udpPacket []byte) error {
+func (hepMsg *HepMsg) parseHep1(udpPacket []byte) error {
 	//var err error
 	if len(udpPacket) < 21 {
 		return errors.New("Found HEP ID for HEP v1, but length of packet is too short to be HEP1 or is NAT keepalive")
@@ -139,8 +140,8 @@ func (hepMsg *HepMsg) ParseHep1(udpPacket []byte) error {
 	packetLength := len(udpPacket)
 	hepMsg.SourcePort = binary.BigEndian.Uint16(udpPacket[4:6])
 	hepMsg.DestinationPort = binary.BigEndian.Uint16(udpPacket[6:8])
-	hepMsg.Ip4SourceAddress = net.IP(udpPacket[8:12]).String()
-	hepMsg.Ip4DestinationAddress = net.IP(udpPacket[12:16]).String()
+	hepMsg.IP4SourceAddress = net.IP(udpPacket[8:12]).String()
+	hepMsg.IP4DestinationAddress = net.IP(udpPacket[12:16]).String()
 	hepMsg.Body = string(udpPacket[16:])
 	if len(udpPacket[16:packetLength-4]) > 1 {
 		hepMsg.SipMsg = sipparser.ParseMsg(string(udpPacket[16:packetLength]))
@@ -155,7 +156,7 @@ func (hepMsg *HepMsg) ParseHep1(udpPacket []byte) error {
 	return nil
 }
 
-func (hepMsg *HepMsg) ParseHep2(udpPacket []byte) error {
+func (hepMsg *HepMsg) parseHep2(udpPacket []byte) error {
 	//var err error
 	if len(udpPacket) < 31 {
 		return errors.New("Found HEP ID for HEP v2, but length of packet is too short to be HEP2 or is NAT keepalive")
@@ -163,11 +164,11 @@ func (hepMsg *HepMsg) ParseHep2(udpPacket []byte) error {
 	packetLength := len(udpPacket)
 	hepMsg.SourcePort = binary.BigEndian.Uint16(udpPacket[4:6])
 	hepMsg.DestinationPort = binary.BigEndian.Uint16(udpPacket[6:8])
-	hepMsg.Ip4SourceAddress = net.IP(udpPacket[8:12]).String()
-	hepMsg.Ip4DestinationAddress = net.IP(udpPacket[12:16]).String()
+	hepMsg.IP4SourceAddress = net.IP(udpPacket[8:12]).String()
+	hepMsg.IP4DestinationAddress = net.IP(udpPacket[12:16]).String()
 	hepMsg.Timestamp = binary.LittleEndian.Uint32(udpPacket[16:20])
 	hepMsg.TimestampMicro = binary.LittleEndian.Uint32(udpPacket[20:24])
-	hepMsg.CaptureAgentId = binary.BigEndian.Uint16(udpPacket[24:26])
+	hepMsg.CaptureAgentID = binary.BigEndian.Uint16(udpPacket[24:26])
 	hepMsg.Body = string(udpPacket[28:])
 	if len(udpPacket[28:packetLength-4]) > 1 {
 		hepMsg.SipMsg = sipparser.ParseMsg(string(udpPacket[28:packetLength]))
@@ -182,7 +183,7 @@ func (hepMsg *HepMsg) ParseHep2(udpPacket []byte) error {
 	return nil
 }
 
-func (hepMsg *HepMsg) ParseHep3(udpPacket []byte) error {
+func (hepMsg *HepMsg) parseHep3(udpPacket []byte) error {
 	length := binary.BigEndian.Uint16(udpPacket[4:6])
 	currentByte := uint16(6)
 
@@ -194,38 +195,38 @@ func (hepMsg *HepMsg) ParseHep3(udpPacket []byte) error {
 		chunkBody := hepChunk[6:chunkLength]
 
 		switch chunkType {
-		case IP_PROTOCOL_FAMILY:
-			hepMsg.IpProtocolFamily = chunkBody[0]
-		case IP_PROTOCOL_ID:
-			hepMsg.IpProtocolId = chunkBody[0]
-		case IP4_SOURCE_ADDRESS:
-			hepMsg.Ip4SourceAddress = net.IP(chunkBody).String()
-		case IP4_DESTINATION_ADDRESS:
-			hepMsg.Ip4DestinationAddress = net.IP(chunkBody).String()
-		case IP6_SOURCE_ADDRESS:
-			hepMsg.Ip6SourceAddress = net.IP(chunkBody).String()
-		case IP6_DESTINATION_ADDRESS:
-			hepMsg.Ip4DestinationAddress = net.IP(chunkBody).String()
-		case SOURCE_PORT:
+		case IPProtocolFamily:
+			hepMsg.IPProtocolFamily = chunkBody[0]
+		case IPProtocolID:
+			hepMsg.IPProtocolID = chunkBody[0]
+		case IP4SourceAddress:
+			hepMsg.IP4SourceAddress = net.IP(chunkBody).String()
+		case IP4DestinationAddress:
+			hepMsg.IP4DestinationAddress = net.IP(chunkBody).String()
+		case IP6SourceAddress:
+			hepMsg.IP6SourceAddress = net.IP(chunkBody).String()
+		case IP6DestinationAddress:
+			hepMsg.IP4DestinationAddress = net.IP(chunkBody).String()
+		case SourcePort:
 			hepMsg.SourcePort = binary.BigEndian.Uint16(chunkBody)
-		case DESTINATION_PORT:
+		case DestinationPort:
 			hepMsg.DestinationPort = binary.BigEndian.Uint16(chunkBody)
-		case TIMESTAMP:
+		case Timestamp:
 			hepMsg.Timestamp = binary.BigEndian.Uint32(chunkBody)
-		case TIMESTAMP_MICRO:
+		case TimestampMicro:
 			hepMsg.TimestampMicro = binary.BigEndian.Uint32(chunkBody)
-		case PROTOCOL_TYPE:
+		case ProtocolType:
 			hepMsg.ProtocolType = chunkBody[0]
-		case CAPTURE_AGENT_ID:
-			hepMsg.CaptureAgentId = binary.BigEndian.Uint16(chunkBody)
-		case KEEP_ALIVE_TIMER:
+		case CaptureAgentID:
+			hepMsg.CaptureAgentID = binary.BigEndian.Uint16(chunkBody)
+		case KeepAliveTimer:
 			hepMsg.KeepAliveTimer = binary.BigEndian.Uint16(chunkBody)
-		case AUTHENTICATE_KEY:
+		case AuthenticationKey:
 			hepMsg.AuthenticateKey = string(chunkBody)
-		case PACKET_PAYLOAD:
+		case PacketPayload:
 			hepMsg.Body += string(chunkBody)
-		case COMPRESSED_PAYLOAD:
-		case INTERNAL_C:
+		case CompressedPayload:
+		case InternalC:
 		default:
 		}
 		currentByte += chunkLength
